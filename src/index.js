@@ -15,15 +15,10 @@ const {
   lightningChart,
   AutoCursorModes,
   AxisTickStrategies,
-  ColorHEX,
-  SolidFill,
-  SolidLine,
   translatePoint,
   Themes,
 } = lcjs;
 
-// colors of the series
-const colors = ["#fc03f0", "#03fc62", "#00d9ff"];
 // names of the data the series
 const names = ["Stock Price A", "Stock Price B", "Stock Price C"];
 // define date that matches value of 0 on date time axis.
@@ -34,7 +29,7 @@ const dataFrequency = 30 * 24 * 60 * 60 * 1000;
 // Create a XY Chart.
 const chart = lightningChart()
   .ChartXY({
-    // theme: Themes.dark
+    // theme: Themes.darkGold
   })
   // Disable native AutoCursor to create custom
   .setAutoCursorMode(AutoCursorModes.disabled)
@@ -55,20 +50,6 @@ const series = new Array(3).fill(0).map((_, i) => {
   const nSeries = chart
     .addPointLineSeries()
     .setMouseInteractions(false)
-    .setPointFillStyle(
-      new SolidFill({
-        color: ColorHEX(colors[i]),
-      })
-    )
-    .setPointSize(7)
-    .setStrokeStyle(
-      new SolidLine({
-        fillStyle: new SolidFill({
-          color: ColorHEX(colors[i]),
-        }),
-        thickness: 2,
-      })
-    );
 
   createProgressiveTraceGenerator()
     .setNumberOfPoints(20)
@@ -84,6 +65,14 @@ const series = new Array(3).fill(0).map((_, i) => {
     });
   return nSeries;
 });
+
+// Read back series colors into CSS supported format "rgba(...)"
+const colors = series.map((nSeries) => {
+  const fill = nSeries.getStrokeStyle().getFillStyle()
+  // NOTE: Assume SolidFill
+  const color = fill.getColor()
+  return `rgba(${color.getR()},${color.getG()},${color.getB()},${color.getA()})`
+})
 
 // Create custom cursor UI by adding HTML elements to the document.
 const styleElem = document.head.appendChild(document.createElement("style"));
@@ -179,7 +168,7 @@ chart.onSeriesBackgroundMouseMove((_, event) => {
       rowElement += `<div class='values' style='color: ${
         colors[i]
       }' ><span>${series[i].getName()}:</span> ${
-        sign + nearestDataPoints[i].location.y.toFixed(1)
+        sign + chart.getDefaultAxisY().formatValue(nearestDataPoints[i].location.y)
       }</div>`;
     }
     line2.innerHTML = rowElement;
