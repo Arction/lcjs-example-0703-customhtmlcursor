@@ -17,6 +17,8 @@ const { lightningChart, AutoCursorModes, AxisTickStrategies, translatePoint, The
 const names = ['Stock Price A', 'Stock Price B', 'Stock Price C']
 // define date that matches value of 0 on date time axis.
 const dateOrigin = new Date(2020, 0, 1)
+const dateOriginTime = dateOrigin.getTime()
+
 // X step between data points.
 const dataFrequency = 30 * 24 * 60 * 60 * 1000
 
@@ -47,13 +49,22 @@ Promise.all(
             .setNumberOfPoints(20)
             .generate()
             .toPromise()
+            // Map random generated data to start from a particular date with the frequency of dataFrequency
+            .then((data) =>
+                data.map((point) => ({
+                    x: dateOriginTime + point.x * dataFrequency,
+                    y: point.y,
+                })),
+            )
+            // Shift the data by dateOriginTime
+            .then((data) =>
+                data.map((p) => ({
+                    x: p.x - dateOriginTime,
+                    y: p.y,
+                })),
+            )
             .then((data) => {
-                nSeries.add(
-                    data.map((point) => ({
-                        x: point.x * dataFrequency,
-                        y: point.y,
-                    })),
-                )
+                nSeries.add(data)
             }),
     ),
 ).then(() => {
@@ -161,11 +172,11 @@ chart.onSeriesBackgroundMouseDragStart((_, e) => {
 })
 
 chart.getDefaultAxisY().onIntervalChange(() => {
-  textBox.style.opacity = 0;
-});
+    textBox.style.opacity = 0
+})
 chart.getDefaultAxisX().onIntervalChange(() => {
-  textBox.style.opacity = 0;
-});
+    textBox.style.opacity = 0
+})
 
 // Add CSS.
 function addStyle(styleString) {
