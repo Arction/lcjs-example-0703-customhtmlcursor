@@ -11,7 +11,7 @@ const lcjs = require('@arction/lcjs')
 const { createProgressiveTraceGenerator } = require('@arction/xydata')
 
 // Extract required parts from LightningChartJS.
-const { lightningChart, AutoCursorModes, AxisTickStrategies, translatePoint, Themes } = lcjs
+const { lightningChart, AutoCursorModes, AxisTickStrategies, Themes } = lcjs
 
 // names of the data the series
 const names = ['Stock Price A', 'Stock Price B', 'Stock Price C']
@@ -69,10 +69,10 @@ Promise.all(
     ),
 ).then(() => {
     chart.forEachAxis((axis) => axis.fit(false))
-    requestAnimationFrame(() => {
+    setTimeout(() => {
         // Show custom cursor at start automatically.
-        showCursorAt({ x: window.innerWidth * 0.4, y: window.innerHeight / 2 })
-    })
+        showCursorAt({ clientX: window.innerWidth * 0.4, clientY: window.innerHeight / 2 })
+    }, 1500)
 })
 
 // Read back series colors into CSS supported format "rgba(...)"
@@ -99,12 +99,12 @@ textBox.appendChild(arrow)
 chart.engine.container.append(textBox)
 
 // Implement custom cursor logic with events.
-const showCursorAt = (mouseLocationEngine) => {
+const showCursorAt = (clientCoordinate) => {
     // Translate mouse location to Axis.
-    const mouseLocationAxis = translatePoint(mouseLocationEngine, chart.engine.scale, series[0].scale)
+    const mouseLocationAxis = chart.translateCoordinate(clientCoordinate, chart.coordsAxis)
 
     // Solve nearest data point to the mouse on each series.
-    const nearestDataPoints = series.map((el) => el.solveNearestFromScreen(mouseLocationEngine))
+    const nearestDataPoints = series.map((el) => el.solveNearestFromScreen(clientCoordinate))
 
     // Find the nearest solved data point to the mouse.
     const nearestPoint = nearestDataPoints.reduce((prev, curr, i) => {
@@ -115,18 +115,17 @@ const showCursorAt = (mouseLocationEngine) => {
 
     if (nearestPoint) {
         // Translate data point from Axis to client.
-        const nearestPointEngine = translatePoint(nearestPoint.location, series[0].scale, chart.engine.scale)
-        const nearestPointClient = chart.engine.engineLocation2Client(nearestPointEngine.x, nearestPointEngine.y)
+        const nearestPointClient = chart.translateCoordinate(nearestPoint.location, chart.coordsAxis, chart.coordsClient)
 
         // Position and format custom HTML cursor.
         if (nearestPoint.location.x > chart.getDefaultAxisX().getInterval().end / 1.5) {
-            textBox.style.left = `${Math.round(nearestPointClient.x - textBox.clientWidth - 10)}px`
-            textBox.style.top = `${Math.round(nearestPointClient.y - textBox.clientHeight / 2)}px`
+            textBox.style.left = `${Math.round(nearestPointClient.clientX - textBox.clientWidth - 10)}px`
+            textBox.style.top = `${Math.round(nearestPointClient.clientY - textBox.clientHeight / 2)}px`
             arrow.style.left = '142px'
             arrow.style.transform = 'translate(-40%, -50%) rotate(-135deg)'
         } else {
-            textBox.style.left = `${Math.round(nearestPointClient.x + 10)}px`
-            textBox.style.top = `${Math.round(nearestPointClient.y - textBox.clientHeight / 2)}px`
+            textBox.style.left = `${Math.round(nearestPointClient.clientX + 10)}px`
+            textBox.style.top = `${Math.round(nearestPointClient.clientY - textBox.clientHeight / 2)}px`
             arrow.style.left = '-1px'
             arrow.style.transform = 'translate(-50%, -50%) rotate(45deg)'
         }
@@ -154,10 +153,7 @@ const showCursorAt = (mouseLocationEngine) => {
 }
 
 const mouseMoveHandler = (_, event) => {
-    const mouseLocationClient = { x: event.clientX, y: event.clientY }
-    // Translate mouse location to LCJS coordinate system for solving data points from series, and translating to Axes.
-    const mouseLocationEngine = chart.engine.clientLocation2Engine(mouseLocationClient.x, mouseLocationClient.y)
-    showCursorAt(mouseLocationEngine)
+    showCursorAt(event)
 }
 chart.onSeriesBackgroundMouseMove(mouseMoveHandler)
 series.forEach((series) => {
