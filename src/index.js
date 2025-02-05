@@ -11,7 +11,7 @@ const lcjs = require('@lightningchart/lcjs')
 const { createProgressiveTraceGenerator } = require('@lightningchart/xydata')
 
 // Extract required parts from LightningChartJS.
-const { lightningChart, AxisTickStrategies, Themes } = lcjs
+const { lightningChart, AxisTickStrategies, emptyFill, Themes } = lcjs
 
 // X step between data points.
 const dataFrequency = 30 * 24 * 60 * 60 * 1000
@@ -33,7 +33,7 @@ chart.getDefaultAxisX().setTickStrategy(AxisTickStrategies.DateTime)
 chart.getDefaultAxisY().setTitle('Stock price variation €')
 
 // Generate data and create the series.
-const series = chart.addPointLineSeries().setMouseInteractions(false)
+const series = chart.addPointLineAreaSeries({ dataPattern: 'ProgressiveX' }).setAreaFillStyle(emptyFill).setPointerEvents(false)
 
 createProgressiveTraceGenerator()
     .setNumberOfPoints(20)
